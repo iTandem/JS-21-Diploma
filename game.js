@@ -10,17 +10,11 @@ class Vector {
     if (!(vector instanceof (Vector))) {
       throw new Error('Ошибка! Можно прибавлять к вектору только вектор типа Vector.');
     }
-    const result = new Vector;
-    result.x = this.x + vector.x;
-    result.y = this.y + vector.y;
-    return result;
+    return new Vector(this.x + vector.x, this.y + vector.y);
   }
 
   times(num) {
-    const result = new Vector;
-    result.x = this.x * num;
-    result.y = this.y * num;
-    return result;
+    return new Vector(this.x * num, this.y * num);
   }
 }
 
@@ -58,7 +52,7 @@ class Actor {
   }
 
   isIntersect(actor) {
-    if (!(actor instanceof (Actor)) || actor === undefined) {
+    if (!(actor instanceof (Actor))) {
       throw new Error('Ошибка! Аргумент не определён или не является объектом Actor')
     }
     if (actor === this) {
@@ -86,45 +80,44 @@ class Level {
     return (this.status !== null && this.finishDelay < 0);
   }
 
-
-  actorAt(obj) {
-    if (!(obj instanceof (Actor)) || obj === undefined) {
-      throw new Error('Ошибка! Аргумент не определён или не является объектом Actor')
+  actorAt(actor) {
+    if (!(actor instanceof Actor)) {
+      throw new Error('Должен быть объектом типа Actor');
     }
-    if (this.actors === undefined) {
-      return undefined;
-    }
-    for (const actor of this.actors) {
-      if (actor.isIntersect(obj)) {
-        return actor;
-      }
-    }
-    return undefined;
+    return this.actors.find(obj => actor.isIntersect(obj));
   }
 
-  obstacleAt(destination, size) {
-    if (!(destination instanceof (Vector)) || !(size instanceof (Vector))) {
-      throw new Error('Ошибка! Аргументы не являются объектами Vector')
+  obstacleAt(pos, size) {
+    if (!(pos instanceof Vector) || !(size instanceof Vector)) {
+      throw new Error('Должен быть объектом типа Vector');
     }
-    let actor = new Actor(destination, size);
-    if (actor.top < 0 || actor.left < 0 || actor.right > this.width) {
+    const left = Math.floor(pos.x);
+    const right = Math.ceil(pos.x + size.x);
+    const top = Math.floor(pos.y);
+    const bottom = Math.ceil(pos.y + size.y);
+
+    if (top < 0 || left < 0 || right > this.width) {
       return 'wall';
     }
-    if (actor.bottom > this.height) {
+    if (bottom > this.height) {
       return 'lava';
     }
-    for (let col = Math.floor(actor.top); col < Math.ceil(actor.bottom); col++) {
-      for (let row = Math.floor(actor.left); row < Math.ceil(actor.right); row++) {
-        if (this.grid[col][row] !== undefined) {
-          return this.grid[col][row];
+
+    for (let i = top; i < bottom; i++) {
+      for (let j = left; j < right; j++) {
+        const obstacle = this.grid[i][j];
+        if (obstacle) {
+          return obstacle;
         }
       }
     }
-    return undefined;
   }
 
   removeActor(actor) {
-    this.actors = this.actors.filter(item => item.pos !== actor.pos || item.size !== actor.size || item.speed !== actor.speed);
+    const index = this.actors.indexOf(actor);
+    if (index !== -1) {
+      this.actors.splice(index, 1);
+    }
   }
 
   noMoreActors(type) {
@@ -153,16 +146,15 @@ class LevelParser {
     if (symbol === undefined) {
       return undefined;
     }
-    return this.dictionary[symbol] ? this.dictionary[symbol] : undefined;
+    return this.dictionary[symbol];
   }
 
   obstacleFromSymbol(symbol) {
     if (symbol === 'x') {
       return 'wall';
-    } else if (symbol === '!') {
+    }
+    if (symbol === '!') {
       return 'lava';
-    } else {
-      return undefined;
     }
   }
 
